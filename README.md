@@ -73,9 +73,16 @@ Multi-account: `QWEN_TOKENS=token1,token2,token3` — the pool round-robins and 
 
 ## 🎡 حالت مهمان (بدون توکن)
 
-بریک بدون توکن هم بالا می‌آید (هدرهای Baxia سنتزشده مثل کلاینت وب).
-ناپایدار است: روی IP خانگی معمولاً کار می‌کند، روی سرور/دیتاسنتر ممکن است کپچا یا ۴۰۱ ببینید — آپستریم هر وقت سخت‌گیرتر می‌شود همین‌جا خودش را نشان می‌دهد.
-برای قدرت کامل و بدون دردسر: **یک توکن بگذار.** اکانت فری = همه مدل‌ها + سقف روزانه‌ی سخاوتمندانه.
+بریک بدون توکن هم بالا می‌آید و روی IP خانگی معمولاً مستقیم کار می‌کند.
+روی سرور/دیتاسنتر، WAF علی‌بابا (Baxia) درخواست مهمان را کپچا می‌کند (RGV587). راه‌حل یک‌دقیقه‌ای:
+
+```bash
+go run ./cmd/qwen-bx        # یا باینری آماده: ./qwen-bx
+```
+
+این ابزار یک مرورگر واقعی باز می‌کند، سه هدر واقعی Baxia را می‌گیرد، با یک چت مهمان زنده تأیید می‌کند و در `qwen-bx.json` ذخیره می‌کند — بریج خودکار همان را بار می‌کند (تأییدشده: حتی روی IP دیتاسنتر پاس می‌شود).
+مسیر فایل سفارشی: `QWEN_BX_FILE=/path/qwen-bx.json`
+برای قدرت کامل و بدون محدودیت مهمان: **یک توکن بگذار.** اکانت فری = همه مدل‌ها + سقف روزانه‌ی سخاوتمندانه.
 
 ---
 
@@ -178,7 +185,7 @@ curl http://localhost:8080/v1/chat/completions \
 |---|---|
 | `RateLimited` | سقف روزانه اکانت پر شده → توکن دوم اضافه کن یا فردا تلاش کن |
 | `unauthorized / session has expired` | توکن منقضی → توکن جدید از کوکی بگیر |
-| `RGV587 / risk-control` | کپچای علی‌بابا (مهمان روی IP دیتاسنتر) → توکن بگذار یا از شبکه خانگی اجرا کن |
+| `RGV587 / risk-control` | کپچای علی‌بابا (مهمان روی IP دیتاسنتر) → `go run ./cmd/qwen-bx` اجرا کن، یا توکن بگذار، یا از شبکه خانگی اجرا کن |
 | `403 forbidden` | مدل برای سطح اکانت باز نیست → `qwen3.8-max` یا `qwen3.7-plus` امتحان کن |
 
 لاگ‌ها فارسی و قابل‌فهم‌اند؛ هر خطا راه‌حل خودش را هم می‌گوید.
@@ -202,11 +209,12 @@ MIT — بر پایه‌ی معماری [GLM-Free-API](https://github.com/Godde3
 Unofficial OpenAI & Anthropic-compatible bridge for **chat.qwen.ai** (Qwen3.8-Max & family).
 Single Go binary with an embedded RTL dashboard, live model discovery, streaming (incl. `reasoning_content`),
 prompt-shim **tool calling** (`AGENT_MODE=true`), and a resilient **multi-account token pool**
-(round-robin + exponential 429 cooldown + pre-stream failover). Guest mode is best-effort (upstream risk-control varies); a free-account cookie token is the reliable path. Local/personal use intended.
+(round-robin + exponential 429 cooldown + pre-stream failover). Guest mode works out of the box on home IPs; on datacenter IPs run `go run ./cmd/qwen-bx` once to capture real browser WAF headers (verified live), or use a free-account cookie token. Local/personal use intended.
 
 - **Quick start:** `cp .env.example .env` → paste your `token` cookie from chat.qwen.ai → `./start.sh`
 - **Endpoints:** `/v1/chat/completions`, `/v1/messages`, `/v1/models`, `/health`
 - **Login helper:** `go run ./cmd/qwen-login`
+- **Guest WAF helper (server IPs):** `go run ./cmd/qwen-bx`
 
 </div>
 </div>

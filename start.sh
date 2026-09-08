@@ -29,7 +29,8 @@ if [ ! -f .env ]; then
     printf "${DIM}       nano .env${OFF}\n"
     printf "${DIM}       (token: chat.qwen.ai → F12 → Application → Cookies → token)${OFF}\n"
     printf "${DIM}       Guest mode works with no token, but datacenter IPs may${OFF}\n"
-    printf "${DIM}       hit Aliyun's captcha — a real token is the reliable path.${OFF}\n"
+    printf "${DIM}       hit Aliyun's captcha — run ./qwen-bx once (real browser${OFF}\n"
+    printf "${DIM}       headers) or use a real token for the reliable path.${OFF}\n"
     printf "${GOLD}───────────────────────────────────────────────────────────${OFF}\n\n"
 fi
 
