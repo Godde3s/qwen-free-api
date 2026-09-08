@@ -3,10 +3,13 @@
 /qwen-api.exe
 /qwen-api-*
 /qwen-login
+/qwen-bx
+/qwen-bx.exe
 /qwen-login.exe
 
 # Runtime artifacts (tokens are secrets — never commit)
 qwen-tokens.json
+qwen-bx.json
 tokens.sqlite
 .env
 

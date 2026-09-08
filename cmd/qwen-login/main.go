@@ -44,7 +44,7 @@ func main() {
         headless := flag.Bool("headless", false, "run without a visible browser (cannot solve captcha by hand)")
         flag.Parse()
 
-        if err := playwright.Install(); err != nil {
+        if err := playwright.Install(&playwright.RunOptions{Browsers: []string{"chromium"}}); err != nil {
                 fmt.Fprintln(os.Stderr, "playwright install failed:", err)
                 os.Exit(1)
         }

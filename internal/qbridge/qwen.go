@@ -11,10 +11,12 @@
 //   - ACCOUNT mode (primary): every request carries `Cookie: token=<JWT>`.
 //     Proven to pass the Aliyun WAF cleanly from datacenter IPs; errors come
 //     back as clean application-level JSON (RateLimited / unauthorized).
-//   - GUEST mode (fallback): no cookie + synthesized Baxia headers
-//     (bx-ua fingerprint + real umidtoken from Alibaba's public wu.json).
-//     Works from residential IPs; datacenter IPs usually get an RGV587
-//     captcha challenge, which is surfaced as a human-readable error.
+//   - GUEST mode (fallback): no cookie + Baxia anti-bot headers.
+//     If cmd/qwen-bx has captured real browser headers into qwen-bx.json
+//     (or $QWEN_BX_FILE), those are used — they pass the WAF even from
+//     datacenter IPs. Otherwise a fingerprint is synthesized, which works
+//     from residential IPs; datacenter IPs usually get an RGV587 captcha
+//     challenge, surfaced as a human-readable error.
 //
 // Upstream always streams (stream:false is not supported by the web API);
 // non-stream client requests are accumulated internally.
@@ -35,6 +37,7 @@ import (
         "log"
         "math/big"
         "net/http"
+        "os"
         "regexp"
         "strings"
         "sync"
@@ -54,7 +57,7 @@ const (
         qwenWebVersion = "0.2.91"
         qwenUserAgent  = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
                 "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
-        baxiaVersion = "2.5.36"
+        baxiaVersion = "2.5.37"
         wumURL       = "https://sg-wum.alibaba.com/w/wu.json"
 )
 
@@ -84,6 +87,52 @@ var (
         baxiaCacheAt  time.Time
         baxiaCacheTTL = 4 * time.Minute
 )
+
+// bxFileTokens is a real Baxia header triple captured from a live browser
+// session by cmd/qwen-bx. Real bx-ua values pass the WAF even from datacenter
+// IPs, where synthesized fingerprints get challenged (verified live).
+type bxFileTokens struct {
+        BxUA        string `json:"bx-ua"`
+        BxUmidToken string `json:"bx-umidtoken"`
+        BxV         string `json:"bx-v"`
+}
+
+var (
+        bxFileMu      sync.Mutex
+        bxFileCache   *bxFileTokens
+        bxFileModTime time.Time
+        bxFileReadAt  time.Time
+)
+
+// loadBaxiaFile returns real Baxia headers from $QWEN_BX_FILE or ./qwen-bx.json.
+// The file is re-read only when its mtime changes.
+func loadBaxiaFile() *bxFileTokens {
+        path := os.Getenv("QWEN_BX_FILE")
+        if path == "" {
+                path = "qwen-bx.json"
+        }
+        bxFileMu.Lock()
+        defer bxFileMu.Unlock()
+        st, err := os.Stat(path)
+        if err != nil {
+                return nil
+        }
+        if bxFileCache != nil && st.ModTime().Equal(bxFileModTime) && time.Since(bxFileReadAt) < time.Minute {
+                return bxFileCache
+        }
+        raw, err := os.ReadFile(path)
+        if err != nil {
+                return nil
+        }
+        var f bxFileTokens
+        if json.Unmarshal(raw, &f) != nil || f.BxUA == "" || f.BxUmidToken == "" || f.BxV == "" {
+                return nil
+        }
+        bxFileCache = &f
+        bxFileModTime = st.ModTime()
+        bxFileReadAt = time.Now()
+        return bxFileCache
+}
 
 func baxiaRandomString(n int) string {
         const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/"
@@ -176,6 +225,9 @@ func fetchUmidToken() string {
 }
 
 func getBaxiaTokens(force bool) baxiaTokens {
+        if f := loadBaxiaFile(); f != nil {
+                return baxiaTokens{BxUA: f.BxUA, BxUmidToken: f.BxUmidToken, BxV: f.BxV}
+        }
         baxiaMu.Lock()
         defer baxiaMu.Unlock()
         if !force && baxiaCache != nil && time.Since(baxiaCacheAt) < baxiaCacheTTL {
@@ -554,7 +606,7 @@ func isQwenWAFResponse(status int, body string) bool {
 func classifyQwenFail(status int, body string) error {
         if isQwenWAFResponse(status, body) {
                 return &upstreamErr{503, "RGV587_ERROR: Aliyun risk-control challenged the request (WAF captcha). " +
-                        "Guest mode from this network is blocked — add account tokens via QWEN_TOKENS, or run the qwen-login helper."}
+                        "Guest mode from this network is blocked — run ./qwen-bx once to capture real browser headers, or add account tokens via QWEN_TOKENS."}
         }
         switch {
         case status == 401:
@@ -618,7 +670,7 @@ func humanizeUpstreamError(detail string) string {
         case strings.Contains(l, "unauthorized"), strings.Contains(l, "session has expired"):
                 return "توکن منقضی یا نامعتبر است — وارد chat.qwen.ai شوید و توکن جدید را در QWEN_TOKENS بگذارید (F12 → Application → Cookies → token). | " + detail
         case rgv587Re.MatchString(detail):
-                return "ریسک‌کنترل علی‌بابا (کپچا) درخواست مهمان را بلاک کرد — با توکن اکانت (QWEN_TOKENS) درخواست بدهید یا از شبکه خانگی استفاده کنید. | " + detail
+                return "ریسک‌کنترل علی‌بابا (کپچا) درخواست مهمان را بلاک کرد — یک‌بار ./qwen-bx را اجرا کنید (هدر واقعی مرورگر می‌گیرد)، یا با توکن اکانت (QWEN_TOKENS) درخواست بدهید یا از شبکه خانگی استفاده کنید. | " + detail
         case strings.Contains(l, "forbidden"):
                 return "این مدل برای سطح اکانت شما باز نیست — مدل دیگری انتخاب کنید یا qwen3.7-plus را امتحان کنید. | " + detail
         default:

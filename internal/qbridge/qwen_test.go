@@ -6,6 +6,7 @@ package qbridge
 import (
 	"encoding/base64"
 	"encoding/json"
+	"os"
 	"strings"
 	"testing"
 )
@@ -135,11 +136,11 @@ func TestIsQwenWAFResponse(t *testing.T) {
 
 func TestStatusFromErrorClassifications(t *testing.T) {
 	cases := map[string]int{
-		"RateLimited: daily cap":                 429,
-		"unauthorized: session has expired":      401,
-		"forbidden: model not allowed":           403,
-		"RGV587_ERROR: risk control":             503,
-		"upstream HTTP 500: oops":                502,
+		"RateLimited: daily cap":            429,
+		"unauthorized: session has expired": 401,
+		"forbidden: model not allowed":      403,
+		"RGV587_ERROR: risk control":        503,
+		"upstream HTTP 500: oops":           502,
 	}
 	for msg, want := range cases {
 		if got := statusFromError(msg); got != want {
@@ -190,10 +191,10 @@ func TestQwenHeadersGuestVsAccount(t *testing.T) {
 
 func TestGenerateBaxiaUA(t *testing.T) {
 	ua := generateBaxiaUA()
-	if !strings.HasPrefix(ua, "2536!") {
+	if !strings.HasPrefix(ua, "2537!") {
 		t.Fatalf("bx-ua prefix wrong: %q", ua[:20])
 	}
-	payload := strings.TrimPrefix(ua, "2536!")
+	payload := strings.TrimPrefix(ua, "2537!")
 	decoded, err := base64.StdEncoding.DecodeString(payload)
 	if err != nil {
 		t.Fatalf("payload not base64: %v", err)
@@ -204,5 +205,27 @@ func TestGenerateBaxiaUA(t *testing.T) {
 	}
 	if _, ok := fp["ts"]; !ok {
 		t.Fatal("fingerprint missing ts")
+	}
+}
+
+func TestLoadBaxiaFile(t *testing.T) {
+	dir := t.TempDir()
+	path := dir + "/qwen-bx.json"
+	good := `{"bx-ua":"234!captured","bx-umidtoken":"T2gAlive","bx-v":"2.5.37"}`
+	if err := os.WriteFile(path, []byte(good), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("QWEN_BX_FILE", path)
+	got := getBaxiaTokens(false)
+	if got.BxUA != "234!captured" || got.BxUmidToken != "T2gAlive" || got.BxV != "2.5.37" {
+		t.Fatalf("real bx file not used: %+v", got)
+	}
+
+	bad := dir + "/bad.json"
+	_ = os.WriteFile(bad, []byte(`{"bx-ua":""}`), 0o600)
+	t.Setenv("QWEN_BX_FILE", bad)
+	syn := getBaxiaTokens(false)
+	if syn.BxUA == "" || syn.BxUmidToken == "" || syn.BxV == "" {
+		t.Fatalf("expected synthesized fallback, got %+v", syn)
 	}
 }
