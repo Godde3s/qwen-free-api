@@ -1,0 +1,16 @@
+# Built binaries (anchored to the repo root so they never shadow source dirs)
+/qwen-api
+/qwen-api.exe
+/qwen-api-*
+/qwen-login
+/qwen-login.exe
+
+# Runtime artifacts (tokens are secrets — never commit)
+qwen-tokens.json
+tokens.sqlite
+.env
+
+# Go
+*.test
+*.out
+/dist/

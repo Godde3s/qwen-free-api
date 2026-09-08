@@ -1,0 +1,20 @@
+services:
+  qwen-free-api:
+    build: .
+    container_name: qwen-free-api
+    ports:
+      - "8080:8080"
+    environment:
+      # Paste your chat.qwen.ai token(s) here (comma separated), or leave
+      # empty and use a bind-mounted .env instead.
+      QWEN_TOKENS: ""
+      AUTH_TOKEN: "qwen"
+      AGENT_MODE: "true"
+    volumes:
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
