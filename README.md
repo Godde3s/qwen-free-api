@@ -15,6 +15,7 @@
 |---|---|
 | 🚀 **تک‌فایل، تک‌دستور** | یک باینری، `./start.sh` — تمام. داشبورد فارسی داخل همان باینری embed شده |
 | 🔌 **دو پروتکل کامل** | `/v1/chat/completions` (OpenAI) + `/v1/messages` (Anthropic) با استریم SSE |
+| 🔢 **count_tokens** | `POST /v1/messages/count_tokens` — parity کامل Anthropic برای بودجه‌بندی Claude Code/Cline (تازه‌ی v1.0.2) |
 | 🧠 **تفکر زنده** | `reasoning_content` مدل‌های thinking مستقیم استریم می‌شود (قابل خاموش‌کردن) |
 | 🛠️ **Tool Calling واقعی** | با `AGENT_MODE=true` ابزارهای OpenAI/Anthropic به prompt ترجمه و جواب‌ها به `tool_calls`/`tool_use` برمی‌گردند — برای Hermes و هر ایجنت دیگر |
 | 👥 **چند-اکانت واقعی** | `QWEN_TOKENS=tok1,tok2,tok3` → round-robin + cooldown نمایی روی RateLimit + failover شفاف قبل از اولین بایت |
