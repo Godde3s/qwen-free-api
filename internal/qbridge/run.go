@@ -39,6 +39,7 @@ func NewHandler() http.Handler {
 	mux.HandleFunc("/models", authMiddleware(modelsHandler2))
 	mux.HandleFunc("/v1/chat/completions", authMiddleware(chatCompletionsHandler))
 	mux.HandleFunc("/v1/messages", authMiddleware(anthropicMessagesHandler))
+	mux.HandleFunc("/v1/messages/count_tokens", authMiddleware(countTokensHandler))
 	mux.HandleFunc("/features", authMiddleware(featuresHandler))
 	mux.HandleFunc("/admin/stats", statsHandler)
 	mux.HandleFunc("/admin/health", healthHandler)
