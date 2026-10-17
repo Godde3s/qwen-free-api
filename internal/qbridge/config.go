@@ -8,6 +8,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/Godde3s/qwen-free-api/internal/authtoken"
 )
 
 // ============================================================================
@@ -116,7 +118,7 @@ func loadConfig() *Config {
 	c.Server.Port = 8080
 	c.Server.Host = "0.0.0.0"
 	c.Auth.Enabled = true
-	c.Auth.Token = "qwen"
+	c.Auth.Token = authtoken.Get()
 	c.Timeouts.Default = 300000
 	c.QwenToken = ""
 	c.AccountQueueTimeout = 120
