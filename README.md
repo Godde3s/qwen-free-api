@@ -89,7 +89,7 @@ go run ./cmd/qwen-bx        # یا باینری آماده: ./qwen-bx
 
 ## 🔌 اتصال برنامه‌ها
 
-**Base URL:** `http://localhost:8080/v1` — **API Key:** مقدار `AUTH_TOKEN` (پیش‌فرض `qwen`)
+**Base URL:** `http://localhost:8080/v1` — **API Key:** مقدار `AUTH_TOKEN` (خالی = کلید تصادفی که در لاگ اجرا چاپ می‌شود)
 
 <details dir="ltr">
 <summary>Python (OpenAI SDK)</summary>
@@ -163,7 +163,7 @@ curl http://localhost:8080/v1/chat/completions \
 |---|---|---|
 | `QWEN_TOKENS` | — | توکن‌ها با `,` جدا شوند؛ pool خودکار می‌چرخد |
 | `PORT` / `HOST` | `8080` / `0.0.0.0` | آدرس سرور |
-| `AUTH_TOKEN` | `qwen` | کلاینت‌ها با `Bearer` یا `x-api-key` |
+| `AUTH_TOKEN` | *(تصادفی هر اجرا)* | کلاینت‌ها با `Bearer` یا `x-api-key` — در لاگ استارتاپ چاپ می‌شود |
 | `AGENT_MODE` | `false` | ترجمه ابزارها برای ایجنت‌ها |
 | `ACCOUNT_COOLDOWN_BASE` | `120` | اولین cooldown روی RateLimit (ثانیه، نمایی ×۲ تا سقف ۳۰ دقیقه) |
 | `ACCOUNT_QUEUE_TIMEOUT` | `120` | صف انتظار وقتی همه اکانت‌ها لیمیت‌اند |
